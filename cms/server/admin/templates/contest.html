@@ -119,6 +119,24 @@
         <input type="checkbox" id="ip_autologin" name="ip_autologin" {{ "checked" if contest.ip_autologin else "" }}/>
       </td>
     </tr>
+    <tr>
+      <td>
+        <span class="info" title="If true, contestants will be able to login trough The Gathering competion system"></span>
+        <label for="tg_login">TG login</label>
+      </td>
+      <td>
+        <input type="checkbox" id="tg_login" name="tg_login" {{ "checked" if contest.tg_login else "" }}/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <span class="info" title="The link to use for tg login"></span>
+        <label for="tg_login_link">TG login link</label>
+      </td>
+      <td>
+        <input type="text" id="tg_login_link" name="tg_login_link" value="{{ contest.tg_login_link if contest.tg_login_link is not none else "" }}"/>
+      </td>
+    </tr>
 
     <tr><td colspan=2><h2>Tokens parameters (<a href="http://cms.readthedocs.org/en/{{ rtd_version }}/Configuring%20a%20contest.html#feedback-to-contestants" target="_blank">documentation</a>)</h2></td></tr>
     <tr>

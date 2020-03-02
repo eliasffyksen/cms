@@ -135,6 +135,16 @@ class Contest(Base):
         nullable=False,
         default=False)
 
+    tg_login = Column(
+        Boolean,
+        nullable=False,
+        default=True)
+
+    tg_login_link = Column(
+        String,
+        nullable=False,
+        default="")
+
     # The parameters that control contest-tokens follow. Note that
     # their effect during the contest depends on the interaction with
     # the parameters that control task-tokens, defined on each Task.

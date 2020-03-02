@@ -212,6 +212,10 @@ def authenticate_request(
         participation, cookie = _authenticate_request_from_cookie(
             sql_session, contest, timestamp, cookie)
 
+    if participation is None \
+            and contest.tg_login:
+        logger.info("Trying TGLOGIN")
+
     if participation is None:
         return None, None
 
@@ -232,6 +236,7 @@ def authenticate_request(
             ip_address, contest.name, participation.user.username, timestamp)
         return None, None
 
+    logger.info(participation)
     return participation, cookie
 
 

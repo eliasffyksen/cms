@@ -107,7 +107,9 @@ class ContestHandler(SimpleContestHandler("contest.html")):
             self.get_bool(attrs, "block_hidden_participations")
             self.get_bool(attrs, "allow_password_authentication")
             self.get_bool(attrs, "ip_restriction")
-            self.get_bool(attrs, "ip_autologin")
+            self.get_bool(attrs, "ip_autologin") 
+            self.get_bool(attrs, "tg_login") 
+            self.get_string(attrs, "tg_login_link") 
 
             self.get_string(attrs, "token_mode")
             self.get_int(attrs, "token_max_number")

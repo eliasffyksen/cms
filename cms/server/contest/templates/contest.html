@@ -88,35 +88,47 @@ $(document).ready(function () {
     {% endif %}
         <div class="login_container">
             <div class="login_box hero-unit">
-                <h1>{% trans %}Welcome{% endtrans %}</h1>
-                <p>{% trans %}Please log in{% endtrans %}</p>
-                <form class="form-horizontal" action="{{ contest_url("login") }}" method="POST">
-                    {{ xsrf_form_html|safe }}
-                    {% set next_page = handler.get_argument("next", none) %}
-                    {% if next_page is not none %}
-                    <input type="hidden" name="next" value="{{ next_page }}">
-                    {% endif %}
-                    <fieldset>
-                        <div class="control-group">
-                            <label class="control-label" for="username">{% trans %}Username{% endtrans %}</label>
-                            <div class="controls">
-                                <input type="text" class="input-xlarge" name="username" id="username">
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label class="control-label" for="password">{% trans %}Password{% endtrans %}</label>
-                            <div class="controls">
-                                <input type="password" class="input-xlarge" name="password" id="password">
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <div class="controls">
-                                <button type="submit" class="btn btn-primary btn-large">{% trans %}Login{% endtrans %}</button>
-                                <button type="reset" class="btn btn-large">{% trans %}Reset{% endtrans %}</button>
-                            </div>
-                        </div>
-                    </fieldset>
-                </form>
+		{% if contest.tg_login %}
+			<h2>Redirecting to TG login...</h2>
+			{% if contest.tg_login_link == '' %}
+				<span style="color: red">ERR: No login link provided</span>
+			{% else %}
+			<a href="{{ contest.tg_login_link | safe }}" class="btn btn-primary btn-block">
+				Login via geekevents
+			</a>
+			{% endif %}
+		{% else %}
+
+			<h1>{% trans %}Welcome{% endtrans %}</h1>
+			<p>{% trans %}Please log in{% endtrans %}</p>
+			<form class="form-horizontal" action="{{ contest_url("login") }}" method="POST">
+			    {{ xsrf_form_html|safe }}
+			    {% set next_page = handler.get_argument("next", none) %}
+			    {% if next_page is not none %}
+			    <input type="hidden" name="next" value="{{ next_page }}">
+			    {% endif %}
+			    <fieldset>
+				<div class="control-group">
+				    <label class="control-label" for="username">{% trans %}Username{% endtrans %}</label>
+				    <div class="controls">
+					<input type="text" class="input-xlarge" name="username" id="username">
+				    </div>
+				</div>
+				<div class="control-group">
+				    <label class="control-label" for="password">{% trans %}Password{% endtrans %}</label>
+				    <div class="controls">
+					<input type="password" class="input-xlarge" name="password" id="password">
+				    </div>
+				</div>
+				<div class="control-group">
+				    <div class="controls">
+					<button type="submit" class="btn btn-primary btn-large">{% trans %}Login{% endtrans %}</button>
+					<button type="reset" class="btn btn-large">{% trans %}Reset{% endtrans %}</button>
+				    </div>
+				</div>
+			    </fieldset>
+			</form>
+		{% endif %}
             </div>
         </div>
 {% else %}

@@ -2,10 +2,11 @@
 install:
 	python3 setup.py install
 
-db:
+db: install
 	cmsDropDB
 	cmsInitDB
 	cmsAddAdmin tgpc -p tgpc
+	cmsAdminWebServer
 
 aws: install db
 	cmsAdminWebServer

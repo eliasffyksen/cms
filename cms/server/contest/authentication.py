@@ -36,6 +36,9 @@ from future.builtins import *  # noqa
 import ipaddress
 import json
 import logging
+import urllib3
+import jwt
+
 from datetime import timedelta
 
 from sqlalchemy.orm import contains_eager, joinedload
@@ -50,7 +53,7 @@ __all__ = ["validate_login", "authenticate_request"]
 
 
 logger = logging.getLogger(__name__)
-
+http = urllib3.PoolManager()
 
 def get_password(participation):
     """Return the password the participation can log in with.
@@ -155,7 +158,7 @@ class AmbiguousIPAddress(Exception):
 
 
 def authenticate_request(
-        sql_session, contest, timestamp, cookie, ip_address):
+        sql_session, contest, timestamp, cookie, ip_address, oauth_code, oauth_cookie):
     """Authenticate a user returning to the site, with a cookie.
 
     Given the information the user's browser provided (the cookie) and
@@ -200,24 +203,25 @@ def authenticate_request(
     if contest.ip_autologin:
         try:
             participation = _authenticate_request_by_ip_address(
-                sql_session, contest, ip_address)
+                sql_session, contest, ip_address, oauth_code, oauth_cookie)
             # If the login is IP-based, the cookie should be cleared.
             if participation is not None:
                 cookie = None
         except AmbiguousIPAddress:
-            return None, None
+            return None, None, None
+
+    if participation is None \
+            and contest.tg_login:
+        participation, oauth_cookie = _authenticate_request_from_oauth(
+                sql_session, contest, oauth_code, oauth_cookie)
 
     if participation is None \
             and contest.allow_password_authentication:
         participation, cookie = _authenticate_request_from_cookie(
             sql_session, contest, timestamp, cookie)
 
-    if participation is None \
-            and contest.tg_login:
-        logger.info("Trying TGLOGIN")
-
     if participation is None:
-        return None, None
+        return None, None, None
 
     # Check if user is using the right IP (or is on the right subnet).
     if contest.ip_restriction and participation.ip is not None \
@@ -226,7 +230,7 @@ def authenticate_request(
             "Unsuccessful authentication from IP address %s, on contest %s, "
             "as %s, at %s: unauthorized IP address",
             ip_address, contest.name, participation.user.username, timestamp)
-        return None, None
+        return None, None, None
 
     # Check that the user is not hidden if hidden users are blocked.
     if contest.block_hidden_participations and participation.hidden:
@@ -234,10 +238,10 @@ def authenticate_request(
             "Unsuccessful authentication from IP address %s, on contest %s, "
             "as %s, at %s: participation is hidden and unauthorized",
             ip_address, contest.name, participation.user.username, timestamp)
-        return None, None
+        return None, None, None
 
     logger.info(participation)
-    return participation, cookie
+    return participation, cookie, oauth_cookie
 
 
 def _authenticate_request_by_ip_address(sql_session, contest, ip_address):
@@ -367,3 +371,68 @@ def _authenticate_request_from_cookie(sql_session, contest, timestamp, cookie):
     return (participation,
             json.dumps([username, correct_password, make_timestamp(timestamp)])
                 .encode("utf-8"))
+
+def _authenticate_request_from_oauth(sql_session, contest, oauth_code, oauth_cookie):
+ 
+
+
+    if oauth_cookie is not None:
+
+        participation = sql_session.query(Participation) \
+            .filter(Participation.contest == contest) \
+            .filter(Participation.id == json.loads(oauth_cookie.decode('utf-8'))) \
+            .first()
+        if participation is None:
+            return None, None
+        return participation, oauth_cookie
+
+    if oauth_code != "":
+        r = http.request(
+            'POST',
+            'https://oscar.zoodo.io/o/token/',
+            fields={
+                'code': oauth_code,
+                'client_secret': 'KxQM4MeaMC9DrJFAEGm1vmq2xHy9sJc01NSRkh8r1ZyIHn9hG2GJKzoNtmp2BeY6HCwB0M2hbv2qhLefLfsojQSXCWsxoVKof7kvamhIhvprj1Dt6DkgOXbwyY5gcq3r',
+                'client_id': '3cKrmr97eK1sb24lYkuWgaRlg4XmYNXg90IUG7Cr',
+                'grant_type': 'authorization_code',
+                'redirect_uri': 'http://tgpc.lxc'
+            }
+        )
+        data = json.loads(r.data.decode('utf-8'))
+        if "access_token" not in data:
+            return None, None
+        
+        access_token = jwt.decode(data["access_token"], verify=False)
+        
+        user = sql_session.query(User) \
+            .filter(User.oauth_id == access_token["uid"]) \
+            .first()
+        
+        if user is None:
+            user = User(
+                    first_name=access_token["first_name"],
+                    last_name=access_token["last_name"],
+                    username=access_token["display_name"],
+                    oauth_id=access_token["uid"],
+                    password="",
+                    email=access_token["email"]
+            )
+            sql_session.add(user)
+            sql_session.flush()
+
+        participation = sql_session.query(Participation) \
+            .filter(Participation.contest == contest) \
+            .filter(Participation.user == user) \
+            .first()
+
+        if participation is None:
+            participation = Participation(contest=contest, user=user)
+            sql_session.add(participation)
+            sql_session.flush()
+
+        sql_session.commit()
+        
+        return participation, json.dumps(participation.id).encode('utf-8')
+
+    return None, None
+

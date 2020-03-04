@@ -77,6 +77,10 @@ class User(Base):
         nullable=False,
         default=lambda: build_password(generate_random_password()))
 
+    oauth_id = Column(
+        Integer,
+        unique=True)
+
     # Email for any communications in case of remote contest.
     email = Column(
         Unicode,
@@ -197,6 +201,7 @@ class Participation(Base):
     password = Column(
         Unicode,
         nullable=True)
+
 
     # A hidden participation (e.g. does not appear in public rankings), can
     # also be used for debugging purposes.

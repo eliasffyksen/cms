@@ -160,8 +160,18 @@ class ContestHandler(BaseHandler):
                            self.request.remote_ip)
             return None
 
-        participation, cookie = authenticate_request(
-            self.sql_session, self.contest, self.timestamp, cookie, ip_address)
+        oauth_code = self.get_argument("code", "")
+        oauth_cookie = self.get_secure_cookie("oauth")
+
+        participation, cookie, oauth_cookie = authenticate_request(
+            self.sql_session, self.contest, self.timestamp, cookie, ip_address,
+            oauth_code, oauth_cookie)
+
+
+        if oauth_cookie is None:
+            self.clear_cookie("oauth")
+        elif self.refresh_cookie:
+            self.set_secure_cookie("oauth", oauth_cookie, expires_days=None)
 
         if cookie is None:
             self.clear_cookie(cookie_name)

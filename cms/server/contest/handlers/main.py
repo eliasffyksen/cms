@@ -145,6 +145,7 @@ class LogoutHandler(ContestHandler):
     @multi_contest
     def post(self):
         self.clear_cookie(self.contest.name + "_login")
+        self.clear_cookie("oauth")
         self.redirect(self.contest_url())
 
 
